@@ -129,13 +129,6 @@ function copy_spreadsheet_from_template(spreadsheet_url, template_sheet_name, fo
   }
 }
 
-function move_file(fileId, folderId) {
-  let folder = DriveApp.getFolderById(folderId); 
-  let file = DriveApp.getFileById(fileId);
-  file.moveTo(folder);
-}
-
-
 function CreateSSFromTemplateSpreadsheet(template_spreadsheet_url, template_sheet_name, folder_id, new_spreadsheet_name){
   // Copy new spreadsheet by using new name (invoice date in yyyymm format)
   const new_spreadsheet_id = copy_spreadsheet_from_template(template_spreadsheet_url, template_sheet_name, folder_id, new_spreadsheet_name);
