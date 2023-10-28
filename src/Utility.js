@@ -34,7 +34,7 @@ function GetUniqueValues(values) {
     } else {
       value = values[i]
     }
-    if (!seen.has(value) && !isBlank(value)) {  // If value has not been seen yet
+    if (!seen.has(value) && !IsBlank(value)) {  // If value has not been seen yet
       seen.add(value);       // Mark the value as seen
       uniqueValues.push([value]);  // Add it to the list of unique values
     }
@@ -83,7 +83,7 @@ function CopySpreadsheet(spreadsheet_url, folder_id, new_spreadsheet_name) {
 
     // Create a copy of the spreadsheet
     var copied_spreadsheet_id = original_spreadsheet.copy(new_spreadsheet_name).getId();
-    move_file(copied_spreadsheet_id, folder_id)
+    MoveFile(copied_spreadsheet_id, folder_id)
     Logger.log(new_spreadsheet_name)
     return copied_spreadsheet_id
  
@@ -155,7 +155,7 @@ new_spreadsheet_name, backup = false) {
     copied_sheet.setName(new_spreadsheet_name);
 
     var copied_spreadsheet_id = copied_sheet.getParent().getId();
-    move_file(copied_spreadsheet_id, folder_id, backup = backup)
+    MoveFile(copied_spreadsheet_id, folder_id, backup = backup)
     Logger.log(new_spreadsheet_name)
     return copied_spreadsheet_id
  
@@ -173,13 +173,14 @@ function MoveFile(fileId, folderId, backup = false) {
   
   if (existingFiles.hasNext() && backup) {
     // If a file with the same name exists and backup is true
-    let backupFolderId = ensureAndGetBackupFolderId(folderId);
+    let backupFolderId = EnsureAndGetBackupFolderId(folderId);
     let backupFolder = DriveApp.getFolderById(backupFolderId);
     let existingFile = existingFiles.next();
     existingFile.moveTo(backupFolder);
   }
   
   // Move the new file to the destination folder
+
   file.moveTo(folder);
 }
 
@@ -198,9 +199,12 @@ function EnsureAndGetBackupFolderId(parentFolderId) {
   }
 }
 
-function CreateSSFromTemplateSpreadsheet(template_spreadsheet_url, template_sheet_name, folder_id, new_spreadsheet_name){
+function CreateSSFromTemplateSpreadsheet(template_spreadsheet_url, template_sheet_name, folder_id, new_spreadsheet_name,
+backup = false){
   // Copy new spreadsheet by using new name (invoice date in yyyymm format)
-  const new_spreadsheet_id = copy_spreadsheet_from_template(template_spreadsheet_url, template_sheet_name, folder_id, new_spreadsheet_name);
+  const new_spreadsheet_id = CopySpreadsheetFromTemplate(template_spreadsheet_url, template_sheet_name, folder_id, 
+  new_spreadsheet_name, backup);
+  Logger.log("new_spreadsheet_id: " +new_spreadsheet_id);
   // Open new spreadsheet and get the template sheet
   const new_spreadsheet = SpreadsheetApp.openById(new_spreadsheet_id);
   Logger.log(new_spreadsheet.getActiveSheet().getName());
@@ -252,13 +256,13 @@ function GetLastColumnWithValue(sheet, range_val){
 /**
  * Custom SUMIFS function for Google Apps Script.
  * 
- * @param {Array} sumRange - The range of numbers to be summed.
- * @param {Array} criteriaRanges - An array of ranges where criteria are applied.
+ * @param {Array} sumRange.getValues() - The range of numbers to be summed.
+ * @param {Array} criteriaRanges.getValues() - An array of ranges where criteria are applied.
  * @param {Array} criteria - An array of criteria corresponding to criteriaRanges.
  * @return {number} - The summed value based on the criteria.
  * @customfunction
  */
-function CUSTOM_SUMIFS(sumRange, criteriaRanges, criteria) {
+function CustomSUMIFS(sumRange, criteriaRanges, criteria) {
   if (criteriaRanges.length !== criteria.length) {
     throw new Error("Number of criteria ranges and criteria should be the same.");
   }
@@ -367,7 +371,7 @@ function ValueExists(matrix, value) {
 
 // csv_url: your CSV file's (in Shift-JIS) full URL from Google Drive
 function CsvToSpreadsheet(csv_url) {
-  var fileId = extractFileIdFromUrl(csv_url);
+  var fileId = ExtractFileIdFromUrl(csv_url);
   
   var file = DriveApp.getFileById(fileId);
   var csvBlob = file.getBlob();
