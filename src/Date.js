@@ -33,6 +33,18 @@ function StringToDate(dateString) {
   return new Date(year, month, day);
 }
 
+function FormatMonthFromString(dateString) {
+  var date = new Date(dateString);
+
+  var year = date.getFullYear();
+  var month = date.getMonth() + 1; // Months are zero-based
+
+  // Format in "yyyy/mm" format
+  var formattedMonth = year + "/" + (month < 10 ? "0" : "") + month; 
+  return formattedMonth;
+}
+
+
 function FormatTimeHMSm(time){
   // Convert time difference to hours, minutes, seconds, and milliseconds
   var hours = Math.floor(time / (1000 * 60 * 60));
