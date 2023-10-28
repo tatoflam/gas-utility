@@ -1,4 +1,4 @@
-function getConfig() {
+function GetConfig() {
   var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Config');
   var range = sheet.getRange('A:B'); // Assuming keys in Column A and values in Column B
   var values = range.getValues();
@@ -10,15 +10,15 @@ function getConfig() {
   return config;
 }
 
-function columnToIndex(columnLetter) {
+function ColumnToIndex(columnLetter) {
   var index = 0;
   for (var i = 0; i < columnLetter.length; i++) {
     index = index * 26 + (columnLetter.charCodeAt(i) - 'A'.charCodeAt(0) + 1);
   }
-  return index - 1;  // zero-based index
+  return index - 1;  // zero-based indxex
 }
 
-function getUniqueValues(values) {
+function GetUniqueValues(values) {
   Logger.log("values length: "+ values.length);
   var is_2d_array = false;
   if (Array.isArray(values[0])){
@@ -43,11 +43,11 @@ function getUniqueValues(values) {
   return uniqueValues;
 }
 
-function isBlank(str) {
+function IsBlank(str) {
   return (!str || str.trim().length === 0);
 }
 
-function getRawUniqueValues(values) {
+function GetRawUniqueValues(values) {
   Logger.log("values length: "+ values.length);
   var is_2d_array = false;
   if (Array.isArray(values[0])){
@@ -73,7 +73,7 @@ function getRawUniqueValues(values) {
 }
 
 
-function copy_spreadsheet(spreadsheet_url, folder_id, new_spreadsheet_name) {
+function CopySpreadsheet(spreadsheet_url, folder_id, new_spreadsheet_name) {
   try {
     Logger.log(spreadsheet_url)
 
@@ -92,11 +92,7 @@ function copy_spreadsheet(spreadsheet_url, folder_id, new_spreadsheet_name) {
   }
 }
 
-function move_file(fileId, folderId) {
-  let folder = DriveApp.getFolderById(folderId); 
-  let file = DriveApp.getFileById(fileId);
-  file.moveTo(folder);
-}
+/** 
 
 function copy_spreadsheet_from_template(spreadsheet_url, template_sheet_name, folder_id, new_spreadsheet_name) {
   try {
@@ -129,6 +125,79 @@ function copy_spreadsheet_from_template(spreadsheet_url, template_sheet_name, fo
   }
 }
 
+function move_file(fileId, folderId) {
+  let folder = DriveApp.getFolderById(folderId); 
+  let file = DriveApp.getFileById(fileId);
+  file.moveTo(folder);
+}
+*/
+
+function CopySpreadsheetFromTemplate(spreadsheet_url, template_sheet_name, folder_id, 
+new_spreadsheet_name, backup = false) {
+  try {
+    Logger.log(spreadsheet_url)
+
+    // Get the existing spreadsheet by name
+    var original_spreadsheet = SpreadsheetApp.openByUrl(spreadsheet_url);
+    var source_sheet = original_spreadsheet.getSheetByName(template_sheet_name);
+    Logger.log("Creating a sparedsheet from a sheet: " + original_spreadsheet.getActiveSheet().getName())
+
+    // Create a copy of the spreadsheet
+    // var copied_spreadsheet_id = original_spreadsheet.copy(new_spreadsheet_name).getId();
+    var copied_sheet = source_sheet.copyTo(SpreadsheetApp.create(new_spreadsheet_name));
+
+    // Remove empty sheet created by Spreadsheet
+    var copied_ss = copied_sheet.getParent();
+    var empty_sheet = copied_ss.getActiveSheet();
+    copied_ss.deleteSheet(empty_sheet);
+
+    // Set sheet name as the same name of spreadsheet
+    copied_sheet.setName(new_spreadsheet_name);
+
+    var copied_spreadsheet_id = copied_sheet.getParent().getId();
+    move_file(copied_spreadsheet_id, folder_id, backup = backup)
+    Logger.log(new_spreadsheet_name)
+    return copied_spreadsheet_id
+ 
+  } catch (e) {
+    Logger.log("Error: " + e.toString());
+  }
+}
+
+function MoveFile(fileId, folderId, backup = false) {
+  let folder = DriveApp.getFolderById(folderId); 
+  let file = DriveApp.getFileById(fileId);
+  
+  // Search for files with the same name in the destination folder
+  let existingFiles = folder.searchFiles('title = "' + file.getName() + '"');
+  
+  if (existingFiles.hasNext() && backup) {
+    // If a file with the same name exists and backup is true
+    let backupFolderId = ensureAndGetBackupFolderId(folderId);
+    let backupFolder = DriveApp.getFolderById(backupFolderId);
+    let existingFile = existingFiles.next();
+    existingFile.moveTo(backupFolder);
+  }
+  
+  // Move the new file to the destination folder
+  file.moveTo(folder);
+}
+
+function EnsureAndGetBackupFolderId(parentFolderId) {
+  var parentFolder = DriveApp.getFolderById(parentFolderId);
+  var folders = parentFolder.searchFolders('title = "backup"');
+
+  // If the folder named "backup" exists, return its ID
+  if (folders.hasNext()) {
+    return folders.next().getId();
+  } 
+  // If not, create a new folder named "backup" and return its ID
+  else {
+    var backupFolder = parentFolder.createFolder("backup");
+    return backupFolder.getId();
+  }
+}
+
 function CreateSSFromTemplateSpreadsheet(template_spreadsheet_url, template_sheet_name, folder_id, new_spreadsheet_name){
   // Copy new spreadsheet by using new name (invoice date in yyyymm format)
   const new_spreadsheet_id = copy_spreadsheet_from_template(template_spreadsheet_url, template_sheet_name, folder_id, new_spreadsheet_name);
@@ -138,88 +207,8 @@ function CreateSSFromTemplateSpreadsheet(template_spreadsheet_url, template_shee
   return [new_spreadsheet, new_spreadsheet_name];
 }
 
-function formatCurrentDateTime(date) {
-  
-  // Timezone is important. You can use the script's timezone or specify one.
-  var timeZone = Session.getScriptTimeZone();
-  
-  // Formatting the date
-  var formattedDate = Utilities.formatDate(date, timeZone, "yyyy/MM/dd HH:mm:ss");
-  
-  Logger.log("Formatted date and time: " + formattedDate);
-  return formattedDate; 
-}
 
-function format_date_from_string(dateString) {
-  // Logger.log(dateString);
-  // Parse the string into a date object
-  var date = new Date(dateString);
-  
-  // Extract year, month, and day
-  var year = date.getFullYear();
-  var month = date.getMonth() + 1; // Months are zero-based
-  var day = date.getDate();
-  
-  // Format in "yyyy/mm/dd" format
-  var formattedDate = year + "/" + (month < 10 ? "0" : "") + month + "/" + (day < 10 ? "0" : "") + day;
-  
-  return formattedDate;
-}
-
-function string_to_date(dateString) {
-  var parts = dateString.split("/");
-  var year = parseInt(parts[0], 10);
-  var month = parseInt(parts[1], 10) - 1; // JavaScript months are 0-based, so we subtract 1
-  var day = parseInt(parts[2], 10);
-
-  return new Date(year, month, day);
-}
-
-
-function FormatTimeHMSm(time){
-  // Convert time difference to hours, minutes, seconds, and milliseconds
-  var hours = Math.floor(time / (1000 * 60 * 60));
-  time -= hours * (1000 * 60 * 60);
-
-  var mins = Math.floor(time / (1000 * 60));
-  time -= mins * (1000 * 60);
-
-  var secs = Math.floor(time / 1000);
-  time -= secs * 1000;
-
-  var millis = time;
-  return formattedTime = Utilities.formatString("%02d:%02d:%02d.%03d", hours, mins, secs, millis);
-  
-}
-
-function getEndOfNextMonth(dateString) {
-  // Parse the date string
-  var dateParts = dateString.split("/");
-  var year = parseInt(dateParts[0], 10);
-  var month = parseInt(dateParts[1], 10) - 1; // Months are zero-based in JavaScript Date
-  var day = parseInt(dateParts[2], 10);
-  
-  var date = new Date(year, month, day);
-  
-  // Increase month by 2 to get to the next-next month
-  date.setMonth(date.getMonth() + 2);
-  
-  // Set to the first day of the next-next month
-  date.setDate(1);
-  
-  // Decrease by one day to get the last day of the next month
-  date.setDate(date.getDate() - 1);
-  
-  // Format the date back to "yyyy/mm/dd"
-  year = date.getFullYear();
-  month = date.getMonth() + 1; // Convert back to 1-based month
-  day = date.getDate();
-  var formattedDate = year + "/" + (month < 10 ? "0" : "") + month + "/" + (day < 10 ? "0" : "") + day;
-  
-  return formattedDate;
-}
-
-function copyFormat(srcSheet, destSheet, startRow, lastColumn) {  
+function CopyFormat(srcSheet, destSheet, startRow, lastColumn) {  
   // Define the source range (e.g., entire 1st row)
   var sourceRange = srcSheet.getRange(startRow, 1, 1, srcSheet.getLastColumn());
 
@@ -230,7 +219,7 @@ function copyFormat(srcSheet, destSheet, startRow, lastColumn) {
   sourceRange.copyTo(destRange, {contentsOnly: false, formatOnly: true});
 }
 
-function getLastRowWithValue(sheet, range_val){
+function GetLastRowWithValue(sheet, range_val){
   var row = sheet.getRange(range_val).getRow();
   var col = sheet.getRange(range_val).getColumn();
   var last_row = sheet.getLastRow();
@@ -245,7 +234,7 @@ function getLastRowWithValue(sheet, range_val){
   return row
 }
 
-function getLastColumnWithValue(sheet, range_val){
+function GetLastColumnWithValue(sheet, range_val){
   var row = sheet.getRange(range_val).getRow();
   var col = sheet.getRange(range_val).getColumn();
   var last_col = sheet.getLastColumn()
@@ -359,30 +348,8 @@ function ClearRowByRange(sheet, range_address) {
   sheet.getRange(rowNumber, 1, 1, sheet.getMaxColumns()).clearContent();
 }
 
-function GetLastDayOfPreviousMonth(date) {
-  // If specificDate is a string, convert it to a Date object
-  if (typeof date === 'string') {
-    date = new Date(date);
-  }
-
-  // Step 2: Set the date to the first day of the current month
-  date.setDate(1);
-
-  // Step 3: Subtract one day from the first day of the current month
-  date.setDate(date.getDate() - 1);
-  
-  // Step 4: Format the date string if needed (for example, in "yyyy/MM/dd" format)
-  var formattedDate = Utilities.formatDate(date, Session.getScriptTimeZone(), 'yyyy/MM/dd');
-  
-  return formattedDate;
-}
-
-function datesAreEqual(date1, date2) {
-  return date1.getTime() === date2.getTime();
-}
-
 // matrix is (n, 0) format 2 dimensional array
-function valueExists(matrix, value) {
+function ValueExists(matrix, value) {
   for (var i = 0; i < matrix.length; i++) {
     var element = matrix[i][0];
 
@@ -397,24 +364,9 @@ function valueExists(matrix, value) {
   return false;
 }
 
-function isWithinFinancialTerm(dateString, year_term) {
-  // Convert the given string to a Date object
-  var parts = dateString.split("/");
-  var year = parseInt(parts[0], 10);
-  var month = parseInt(parts[1], 10) - 1; // JavaScript months are 0-based, so we subtract 1
-  var day = parseInt(parts[2], 10);
-  var givenDate = new Date(year, month, day);
-
-  // Define the start and end dates
-  var startDate = new Date(year_term, 8, 1); // 1st September 2022
-  var endDate = new Date(year_term+1, 7, 31);  // 31st August 2023
-
-  // Check if the given date is within the range
-  return givenDate >= startDate && givenDate <= endDate;
-}
 
 // csv_url: your CSV file's (in Shift-JIS) full URL from Google Drive
-function csvToSpreadsheet(csv_url) {
+function CsvToSpreadsheet(csv_url) {
   var fileId = extractFileIdFromUrl(csv_url);
   
   var file = DriveApp.getFileById(fileId);
@@ -443,11 +395,57 @@ function csvToSpreadsheet(csv_url) {
   */
 }
 
-function extractFileIdFromUrl(url) {
+function ExtractFileIdFromUrl(url) {
   var match = url.match(/file\/d\/([^\/]+)\//);
   if (match) {
     return match[1];
   } else {
     throw new Error('Invalid Google Drive URL');
   }
+}
+
+function ResetHoursForDateArray(dateArray) {
+  return dateArray.map(function(row) {
+    return row.map(function(cell) {
+      if (cell instanceof Date) {
+        cell.setHours(0, 0, 0, 0);
+      // When the input is 2-dimensional array
+      } else if (cell instanceof Array) {
+        cell[0].setHours(0, 0, 0, 0);
+      }
+      return cell;
+    });
+  });
+}
+
+function ListSpreadsheets(folderId, nameIdentifier) {
+  var folder = DriveApp.getFolderById(folderId);
+  var allFiles = folder.getFiles();
+  var spreadsheetIds = [];
+  var regexPattern = new RegExp(nameIdentifier, 'i'); // 'i' is for case-insensitive matching
+
+  while (allFiles.hasNext()) {
+    var file = allFiles.next();
+    var fileName = file.getName();
+    var fileType = file.getMimeType();
+    
+    // Check if the file is a Google Spreadsheet and its name matches the regex pattern
+    if (fileType === MimeType.GOOGLE_SHEETS && regexPattern.test(fileName)) {
+      spreadsheetIds.push(file.getId());
+    }
+  }
+
+  return spreadsheetIds;
+}
+
+function SumupValues(values){
+  var sum = 0;
+  for (var i = 0; i < values.length; i++) {
+    for (var j = 0; j < values[i].length; j++) {
+      if (typeof values[i][j] === 'number') {
+        sum += values[i][j];
+      }
+    }
+  }
+  return sum
 }
