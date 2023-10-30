@@ -63,7 +63,7 @@ function GetRawUniqueValues(values) {
     } else {
       value = values[i]
     }
-    if (!seen.has(value) && !isBlank(value)) {  // If value has not been seen yet
+    if (!seen.has(value) && !IsBlank(value)) {  // If value has not been seen yet
       seen.add(value);       // Mark the value as seen
       uniqueValues.push(value);  // Add it to the list of unique values
     }
@@ -73,17 +73,17 @@ function GetRawUniqueValues(values) {
 }
 
 
-function CopySpreadsheet(spreadsheet_url, folder_id, new_spreadsheet_name) {
+function CopySpreadsheet(spreadsheet_url, folder_id, new_spreadsheet_name, backup=false) {
   try {
-    Logger.log(spreadsheet_url)
+    Logger.log("copy source: " + spreadsheet_url)
 
     // Get the existing spreadsheet by name
     var original_spreadsheet = SpreadsheetApp.openByUrl(spreadsheet_url);
-    Logger.log(original_spreadsheet.getActiveSheet().getName())
+    Logger.log("copy source sheet name: " + original_spreadsheet.getActiveSheet().getName())
 
     // Create a copy of the spreadsheet
     var copied_spreadsheet_id = original_spreadsheet.copy(new_spreadsheet_name).getId();
-    MoveFile(copied_spreadsheet_id, folder_id)
+    MoveFile(copied_spreadsheet_id, folder_id, backup)
     Logger.log(new_spreadsheet_name)
     return copied_spreadsheet_id
  
@@ -301,7 +301,7 @@ function CustomSUMIFS(sumRange, criteriaRanges, criteria) {
 
 
       // Check if both the cellValue and criterion are Date objects
-      if (cellValue instanceof Date && criterion instanceof Date) {
+      if (isDateValid(cellValue) && isDateValid(criterion)) {
         if (!areDatesEqual(cellValue, criterion)) {
           matchesAllCriteria = false;
           break;
@@ -411,11 +411,13 @@ function ExtractFileIdFromUrl(url) {
 function ResetHoursForDateArray(dateArray) {
   return dateArray.map(function(row) {
     return row.map(function(cell) {
-      if (cell instanceof Date) {
+      if (isDateValid(cell)) {
         cell.setHours(0, 0, 0, 0);
       // When the input is 2-dimensional array
       } else if (cell instanceof Array) {
-        cell[0].setHours(0, 0, 0, 0);
+        if (isDateValid(cell[0])) {
+          cell[0].setHours(0, 0, 0, 0);
+        }
       }
       return cell;
     });

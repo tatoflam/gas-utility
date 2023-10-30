@@ -75,7 +75,7 @@ function GetEndOfNextMonth(dateString) {
   var month = parseInt(dateParts[1], 10) - 1; // Months are zero-based in JavaScript Date
   //var day = parseInt(dateParts[2], 10);
   var day = 1;
-  
+
   var date = new Date(year, month, day);
   
   // Increase month by 2 to get to the next-next month
@@ -140,4 +140,8 @@ function IsWithinFinancialTerm(dateString, year_term) {
 
   // Check if the given date is within the range
   return givenDate >= startDate && givenDate <= endDate;
+}
+
+function isDateValid(dateStr) {
+  return !isNaN(new Date(dateStr));
 }
