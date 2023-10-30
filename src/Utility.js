@@ -453,3 +453,71 @@ function SumupValues(values){
   }
   return sum
 }
+
+function CountLeaves(obj) {
+  var count = 0;
+  
+  // Check if obj is an actual object and not an array or null
+  if (obj && typeof obj === 'object' && !Array.isArray(obj)) {
+    for (var key in obj) {
+      // Recursively count leaves for sub-objects
+      count += CountLeaves(obj[key]);
+    }
+  } else {
+    // We have found a leaf
+    count = 1;
+  }
+
+  return count;
+}
+
+function SearchRowIndex(range, searchColumns, criterions) {
+  // Check for input validity
+  if (searchColumns.length !== criterions.length) {
+    throw new Error("searchColumns length must be equal to criterions length");
+  }
+
+  // Extract values from the main range and searchColumns
+  var mainValues = range.getValues();
+
+  // This will store values from each searchColumn
+  var columnValuesArray = [];
+  for (var i = 0; i < searchColumns.length; i++) {
+    columnValuesArray.push(searchColumns[i].getValues().map(function(row) {
+      return row[0]; // Since it's a 1-column range, we take the first element
+    }));
+  }
+
+  // Iterate over each row in the main range
+  for (var i = 0; i < mainValues.length; i++) {
+    var allCriteriaMatched = true;
+
+    // Check each criterion
+    for (var j = 0; j < searchColumns.length; j++) {
+      var cellValue = columnValuesArray[j][i]; // Value from the j-th searchColumn for the i-th row
+      var criterion = criterions[j];
+
+      if (cellValue !== criterion) {
+        allCriteriaMatched = false;
+        break;
+      }
+    }
+
+    // If all criteria matched for the row, return the row index
+    if (allCriteriaMatched) {
+      return range.getRow() + i; // Adjust to get the absolute row index in the sheet
+    }
+  }
+
+  // If no match is found, return -1 or null (based on preference)
+  return -1;
+}
+
+function isObjectBlank(obj) {
+  for (var key in obj) {
+    if (obj.hasOwnProperty(key)) {
+      return false;
+    }
+  }
+  return true;
+}

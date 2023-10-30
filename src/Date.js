@@ -33,6 +33,13 @@ function StringToDate(dateString) {
   return new Date(year, month, day);
 }
 
+function StringMonthToLastDate(dateString) {
+  var parts = dateString.split("/");
+  var year = parseInt(parts[0],10);
+  var monthIdx = parseInt(parts[1], 10);
+  return GetLastDayOfPreviousMonth(new Date(year,monthIdx))
+}
+
 function FormatMonthFromString(dateString) {
   var date = new Date(dateString);
 
@@ -66,7 +73,8 @@ function GetEndOfNextMonth(dateString) {
   var dateParts = dateString.split("/");
   var year = parseInt(dateParts[0], 10);
   var month = parseInt(dateParts[1], 10) - 1; // Months are zero-based in JavaScript Date
-  var day = parseInt(dateParts[2], 10);
+  //var day = parseInt(dateParts[2], 10);
+  var day = 1;
   
   var date = new Date(year, month, day);
   
