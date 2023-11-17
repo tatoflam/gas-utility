@@ -133,7 +133,7 @@ function move_file(fileId, folderId) {
 */
 
 function CopySpreadsheetFromTemplate(spreadsheet_url, template_sheet_name, folder_id, 
-new_spreadsheet_name, backup = false) {
+new_spreadsheet_name, backup = false, metadata = false) {
   try {
     Logger.log(spreadsheet_url)
 
@@ -151,6 +151,12 @@ new_spreadsheet_name, backup = false) {
     var empty_sheet = copied_ss.getActiveSheet();
     copied_ss.deleteSheet(empty_sheet);
 
+    if (metadata) {
+      AddSheetToEnd(copied_ss, "metadata");
+      var metadata_sheet = copied_ss.getSheetByName("metadata");
+      metadata_sheet.getRange(1, 1, 1, 2).setValues([["Template sheet name", template_sheet_name]])
+    }
+
     // Set sheet name as the same name of spreadsheet
     copied_sheet.setName(new_spreadsheet_name);
 
@@ -162,6 +168,15 @@ new_spreadsheet_name, backup = false) {
   } catch (e) {
     Logger.log("Error: " + e.toString());
   }
+}
+
+function AddSheetToEnd(spreadsheet, sheetName) {
+  // Determine the position for the new sheet (last position)
+  var numOfSheets = spreadsheet.getNumSheets();
+  var newPosition = numOfSheets;
+
+  // Insert the new sheet at the end of the spreadsheet
+  spreadsheet.insertSheet(sheetName, newPosition);
 }
 
 function MoveFile(fileId, folderId, backup = false) {
